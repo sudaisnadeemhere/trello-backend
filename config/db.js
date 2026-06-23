@@ -2,8 +2,11 @@ const mongoose = require('mongoose');
 let mongodInstance = null;
 
 const connectDB = async () => {
-  const defaultUri = 'mongodb://127.0.0.1:27017/trello-lite';
-  const uri = process.env.MONGO_URI || defaultUri;
+ const uri = process.env.MONGO_URI;
+
+if (!uri) {
+  throw new Error('MONGO_URI is not defined');
+}
 
   try {
     await mongoose.connect(uri, {
