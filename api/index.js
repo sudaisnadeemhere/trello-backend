@@ -40,10 +40,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// TEST ROUTE
-app.get("/", (req, res) => {
-  res.json({ message: "API working" });
-});
+
 
 // ROUTES
 const authRoutes = require("../backend/routes/auth");
@@ -52,5 +49,7 @@ const taskRoutes = require("../backend/routes/tasks");
 app.use("/api/auth", authRoutes);
 app.use("/api/tasks", taskRoutes);
 
-// ✅ IMPORTANT: correct Vercel export
-module.exports = app;
+
+app.get("/", (req, res) => res.send("API Running..."));
+
+export default app;
