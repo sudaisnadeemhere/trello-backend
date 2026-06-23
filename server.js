@@ -10,25 +10,28 @@ const taskRoutes = require("./routes/tasks");
 
 const app = express();
 
+// DB
 connectDB();
 
+// Middleware
 app.use(express.json());
 
-// ✅ CORS FIX (MUST BE SIMPLE)
+// IMPORTANT: CORS MUST BE FIRST CLASS
 app.use(cors({
   origin: "https://trello-frontend-eta.vercel.app",
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
 app.options("*", cors());
 
-// Routes
+// Routes (KEEP THESE EXACT)
 app.use("/api/auth", authRoutes);
 app.use("/api/tasks", taskRoutes);
 
+// Test route
 app.get("/", (req, res) => {
-  res.json({ message: "Backend working" });
+  res.json({ message: "backend working" });
 });
 
 module.exports = app;

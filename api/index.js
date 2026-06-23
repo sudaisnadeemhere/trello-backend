@@ -1,5 +1,4 @@
 const app = require("../backend/server");
 
-module.exports = (req, res) => {
-  return app(req, res);
-};
+// THIS is the correct Vercel handler style
+module.exports = app;
