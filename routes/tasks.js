@@ -1,28 +1,42 @@
-const express = require('express');
-const auth = require('../middleware/auth');
-const Task = require('../models/Task');
-const User = require('../models/User');
-const { users: usersFallback, tasks: tasksFallback } = require('../data/fallback');
+import express from "express";
+import mongoose from "mongoose";
+import auth from "../middleware/auth.js";
+import Task from "../models/Task.js";
+import User from "../models/User.js";
+import { users as usersFallback, tasks as tasksFallback } from "../data/fallback.js";
 
 const router = express.Router();
 const generateId = () => `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+const isDbConnected = () => mongoose.connection.readyState === 1;
+const logDbFallback = (action, err) => {
+  const logger = err.message === 'Database is not connected' ? console.warn : console.error;
+  logger(`DB ${action} fallback:`, err.message);
+};
 
 router.get('/users', auth, async (req, res) => {
   try {
+    if (!isDbConnected()) {
+      throw new Error('Database is not connected');
+    }
+
     const users = await User.find().select('-password');
     return res.json(users);
   } catch (err) {
-    console.error('DB users error:', err.message);
+    logDbFallback('users', err);
     return res.json(usersFallback.map((u) => ({ _id: u.id, id: u.id, name: u.name, email: u.email })));
   }
 });
 
 router.get('/', auth, async (req, res) => {
   try {
+    if (!isDbConnected()) {
+      throw new Error('Database is not connected');
+    }
+
     const tasks = await Task.find().populate('assignedTo', 'name email');
     return res.json(tasks);
   } catch (err) {
-    console.error('DB tasks error:', err.message);
+    logDbFallback('tasks', err);
     return res.json(tasksFallback);
   }
 });
@@ -32,6 +46,10 @@ router.post('/', auth, async (req, res) => {
   if (!title || !assignedTo) return res.status(400).json({ message: 'Title and assigned user required' });
 
   try {
+    if (!isDbConnected()) {
+      throw new Error('Database is not connected');
+    }
+
     const task = new Task({
       title,
       description,
@@ -45,7 +63,7 @@ router.post('/', auth, async (req, res) => {
     const populated = await task.populate('assignedTo', 'name email');
     return res.json(populated);
   } catch (err) {
-    console.error('DB create task error:', err.message);
+    logDbFallback('create task', err);
     const assignedUser = usersFallback.find((u) => u.id === assignedTo) || { id: assignedTo, name: 'Unknown', email: '' };
     const newTask = {
       _id: generateId(),
@@ -65,6 +83,10 @@ router.post('/', auth, async (req, res) => {
 router.put('/:id', auth, async (req, res) => {
   const { title, description, assignedTo, status, dueDate, priority } = req.body;
   try {
+    if (!isDbConnected()) {
+      throw new Error('Database is not connected');
+    }
+
     const task = await Task.findById(req.params.id);
     if (!task) return res.status(404).json({ message: 'Task not found' });
 
@@ -79,7 +101,7 @@ router.put('/:id', auth, async (req, res) => {
     const populated = await task.populate('assignedTo', 'name email');
     return res.json(populated);
   } catch (err) {
-    console.error('DB update task error:', err.message);
+    logDbFallback('update task', err);
     const index = tasksFallback.findIndex((task) => task._id === req.params.id);
     if (index === -1) return res.status(404).json({ message: 'Task not found' });
     tasksFallback[index] = {
@@ -97,13 +119,17 @@ router.put('/:id', auth, async (req, res) => {
 
 router.delete('/:id', auth, async (req, res) => {
   try {
+    if (!isDbConnected()) {
+      throw new Error('Database is not connected');
+    }
+
     const task = await Task.findById(req.params.id);
     if (!task) return res.status(404).json({ message: 'Task not found' });
 
-    await task.remove();
+    await task.deleteOne();
     return res.json({ message: 'Task removed' });
   } catch (err) {
-    console.error('DB delete task error:', err.message);
+    logDbFallback('delete task', err);
     const index = tasksFallback.findIndex((task) => task._id === req.params.id);
     if (index === -1) return res.status(404).json({ message: 'Task not found' });
     tasksFallback.splice(index, 1);
@@ -114,6 +140,10 @@ router.delete('/:id', auth, async (req, res) => {
 router.patch('/:id/status', auth, async (req, res) => {
   const { status } = req.body;
   try {
+    if (!isDbConnected()) {
+      throw new Error('Database is not connected');
+    }
+
     const task = await Task.findById(req.params.id);
     if (!task) return res.status(404).json({ message: 'Task not found' });
 
@@ -126,7 +156,7 @@ router.patch('/:id/status', auth, async (req, res) => {
     const populated = await task.populate('assignedTo', 'name email');
     return res.json(populated);
   } catch (err) {
-    console.error('DB patch task status error:', err.message);
+    logDbFallback('patch task status', err);
     const task = tasksFallback.find((item) => item._id === req.params.id);
     if (!task) return res.status(404).json({ message: 'Task not found' });
     if (!['To Do', 'In Progress', 'Done'].includes(status)) {
@@ -137,4 +167,4 @@ router.patch('/:id/status', auth, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

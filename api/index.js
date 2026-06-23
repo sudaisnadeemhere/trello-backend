@@ -1,54 +1,57 @@
-const express = require("express");
-const cors = require("cors");
+import express from "express";
+import cors from "cors";
+import connectDB from "../config/db.js";
+import authRoutes from "../routes/auth.js";
+import taskRoutes from "../routes/tasks.js";
 
 const app = express();
 
-// MUST be first
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:3000",
+  "https://to-do-application-frontend-phi.vercel.app",
+  process.env.FRONTEND_URL,
+  ...(process.env.CORS_ORIGINS?.split(",") || []),
+].filter(Boolean);
+
+const corsOptions = {
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+  optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
+
 app.use(express.json());
 
-// CORS (simple + correct)
 let isConnected = false;
 
 const connect = async () => {
   if (isConnected) return;
-  await connectDB();
-  isConnected = true;
+
+  try {
+    await connectDB();
+    isConnected = true;
+  } catch (err) {
+    console.error("Database startup error:", err.message);
+  }
 };
 
 connect();
 
-// ── CORS ─────────────────────────────
-app.use(cors({
-  origin: "https://to-do-application-frontend-phi.vercel.app",
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true
-}));
-
-
-
-
-// ── Body parsers ────────────────────
-app.use(express.json());
-
-
-
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "https://to-do-application-frontend-phi.vercel.app");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-  next();
-});
-
-
-
-// ROUTES
-const authRoutes = require("../backend/routes/auth");
-const taskRoutes = require("../backend/routes/tasks");
-
 app.use("/api/auth", authRoutes);
 app.use("/api/tasks", taskRoutes);
-
 
 app.get("/", (req, res) => res.send("API Running..."));
 

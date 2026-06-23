@@ -1,12 +1,18 @@
-const express = require('express');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const { users: usersFallback } = require('../data/fallback');
+import express from "express";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
+import User from "../models/User.js";
+import { users as usersFallback } from "../data/fallback.js";
 
 const router = express.Router();
 
 const generateId = () => `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+const isDbConnected = () => mongoose.connection.readyState === 1;
+const logDbFallback = (action, err) => {
+  const logger = err.message === 'Database is not connected' ? console.warn : console.error;
+  logger(`DB ${action} fallback:`, err.message);
+};
 
 router.post('/register', async (req, res) => {
   const { name, email, password } = req.body;
@@ -16,6 +22,10 @@ router.post('/register', async (req, res) => {
   }
 
   try {
+    if (!isDbConnected()) {
+      throw new Error('Database is not connected');
+    }
+
     // Try DB-backed flow
     let user = await User.findOne({ email });
     if (user) return res.status(400).json({ message: 'Email already registered' });
@@ -31,7 +41,7 @@ router.post('/register', async (req, res) => {
 
     return res.json({ token, user: { id: user.id, name: user.name, email: user.email } });
   } catch (err) {
-    console.error('DB register error:', err.message);
+    logDbFallback('register', err);
     // Fallback to in-memory store
     try {
       if (usersFallback.find((u) => u.email === email)) {
@@ -59,9 +69,13 @@ router.post('/login', async (req, res) => {
     // Try DB-backed flow but handle DB errors separately so we can fallback
     let dbUser = null;
     try {
+      if (!isDbConnected()) {
+        throw new Error('Database is not connected');
+      }
+
       dbUser = await User.findOne({ email });
     } catch (dbErr) {
-      console.error('DB login error:', dbErr.message);
+      logDbFallback('login', dbErr);
       dbUser = null;
     }
 
@@ -90,4 +104,4 @@ router.post('/login', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from "mongoose";
 
 const taskSchema = new mongoose.Schema({
   title: { type: String, required: true, trim: true },
@@ -10,4 +10,4 @@ const taskSchema = new mongoose.Schema({
   priority: { type: String, enum: ['Low', 'Medium', 'High'], default: 'Medium' },
 }, { timestamps: true });
 
-module.exports = mongoose.model('Task', taskSchema);
+export default mongoose.model("Task", taskSchema);

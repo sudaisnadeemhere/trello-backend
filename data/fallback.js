@@ -1,7 +1,7 @@
 const users = [];
 const tasks = [];
 
-module.exports = {
+export {
   users,
   tasks,
 };
