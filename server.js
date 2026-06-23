@@ -1,30 +1,63 @@
-const express = require('express');
-const cors = require('cors');
-const dotenv = require('dotenv');
-const connectDB = require('./config/db');
-const authRoutes = require('./routes/auth');
-const taskRoutes = require('./routes/tasks');
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import connectDB from "./config/db.js";
+
+import authRoutes from "./routes/auth.js";
+import taskRoutes from "./routes/tasks.js";
 
 dotenv.config();
 
 const app = express();
-app.use(express.json());
 
+// DB connection
+let isConnected = false;
+
+const connect = async () => {
+if (isConnected) return;
+await connectDB();
+isConnected = true;
+};
+
+connect();
+
+// CORS
 app.use(
-  cors({
-    origin: ['https://trello-frontend-eta.vercel.app'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true,
-  })
+cors({
+origin: "https://trello-frontend-eta.vercel.app",
+methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+allowedHeaders: ["Content-Type", "Authorization"],
+credentials: true,
+})
 );
 
-connectDB();
+// Body parsers
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-app.use('/api/auth', authRoutes);
-app.use('/api/tasks', taskRoutes);
-
-app.get('/', (req, res) => {
-  res.send({ message: 'Trello-lite backend running' });
+// Extra CORS headers
+app.use((req, res, next) => {
+res.header(
+"Access-Control-Allow-Origin",
+"https://trello-frontend-eta.vercel.app"
+);
+res.header(
+"Access-Control-Allow-Headers",
+"Content-Type, Authorization"
+);
+res.header(
+"Access-Control-Allow-Methods",
+"GET,POST,PUT,DELETE,OPTIONS"
+);
+next();
 });
 
-module.exports = app;
+// Routes
+app.use("/api/auth", authRoutes);
+app.use("/api/tasks", taskRoutes);
+
+app.get("/", (req, res) => {
+res.send({ message: "Trello-lite backend running" });
+});
+
+export default app;
