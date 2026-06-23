@@ -9,7 +9,18 @@ dotenv.config();
 
 const app = express();
 app.use(express.json());
-app.use(cors());
+
+const cors = require('cors');
+
+app.use(
+  cors({
+    origin: [
+      'https://trello-frontend-eta.vercel.app'
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true
+  })
+);
 
 connectDB();
 
