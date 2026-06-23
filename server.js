@@ -25,8 +25,8 @@ app.use(cors({
 
 
 // Routes
-app.use("/auth", authRoutes);
-app.use("/tasks", taskRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/tasks", taskRoutes);
 
 app.get("/", (req, res) => {
   res.json({ message: "Trello-lite backend running" });
