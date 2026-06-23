@@ -10,15 +10,11 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
-const cors = require('cors');
-
 app.use(
   cors({
-    origin: [
-      'https://trello-frontend-eta.vercel.app'
-    ],
+    origin: ['https://trello-frontend-eta.vercel.app'],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true
+    credentials: true,
   })
 );
 
