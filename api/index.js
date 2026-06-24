@@ -12,6 +12,7 @@ const allowedOrigins = new Set([
   "http://127.0.0.1:5173",
   "http://127.0.0.1:3000",
   "https://to-do-application-frontend-phi.vercel.app",
+  "https://trello-frontend-eta.vercel.app",
   process.env.FRONTEND_URL,
   ...(process.env.CORS_ORIGINS?.split(",") || []),
 ].filter(Boolean).map((origin) => origin.replace(/\/$/, "")));
