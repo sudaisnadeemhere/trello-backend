@@ -6,23 +6,33 @@ import taskRoutes from "../routes/tasks.js";
 
 const app = express();
 
-const allowedOrigins = [
+const allowedOrigins = new Set([
   "http://localhost:5173",
   "http://localhost:3000",
   "http://127.0.0.1:5173",
   "http://127.0.0.1:3000",
-  "http://localhost:5000",
   "https://to-do-application-frontend-phi.vercel.app",
   process.env.FRONTEND_URL,
   ...(process.env.CORS_ORIGINS?.split(",") || []),
-].filter(Boolean);
+].filter(Boolean).map((origin) => origin.replace(/\/$/, "")));
+
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+
+  const normalizedOrigin = origin.replace(/\/$/, "");
+  return (
+    allowedOrigins.has(normalizedOrigin) ||
+    /^http:\/\/localhost:\d+$/.test(normalizedOrigin) ||
+    /^http:\/\/127\.0\.0\.1:\d+$/.test(normalizedOrigin) ||
+    /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(normalizedOrigin)
+  );
+};
 
 const corsOptions = {
   origin(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (isAllowedOrigin(origin)) {
       return callback(null, true);
     }
-
     return callback(new Error(`CORS blocked for origin: ${origin}`));
   },
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
